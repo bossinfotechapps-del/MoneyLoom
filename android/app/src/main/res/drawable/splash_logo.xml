@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash mark. 288dp canvas, artwork kept inside the inner 192dp circle Android 12+ masks to. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M108,152 a8,8 0 0 1 8,-8 h13 a8,8 0 0 1 8,8 v40 h-29 z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M144,123 a8,8 0 0 1 8,-8 h13 a8,8 0 0 1 8,8 v69 h-29 z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M180,94 a8,8 0 0 1 8,-8 h13 a8,8 0 0 1 8,8 v98 h-29 z" />
+    <path android:fillColor="#9ED8CF"
+        android:pathData="M103,200 h110 v8 h-110 z" />
+</vector>

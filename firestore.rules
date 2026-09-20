@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// MoneyLoom: each signed-in person can read and write only their own backup document.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+
+      // Older backup copies, kept so a bad restore can be undone
+      match /versions/{versionId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

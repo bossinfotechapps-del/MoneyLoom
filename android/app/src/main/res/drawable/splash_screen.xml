@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash for Android 11 and below (Android 12+ uses the theme attributes in values-v31) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item android:gravity="center">
+        <bitmap android:src="@mipmap/ic_launcher" android:gravity="center" />
+    </item>
+</layer-list>
