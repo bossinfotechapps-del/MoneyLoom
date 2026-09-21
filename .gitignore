@@ -93,3 +93,18 @@ yarn-error.log
 # Local Android signing configuration, if present
 android/keystore.properties
 android/key.properties
+
+node_modules/
+.expo/
+dist/
+build/
+android/.gradle/
+android/build/
+android/app/build/
+*.keystore
+*.jks
+.env
+.env.*
+!.env.example
+google-services.json
+android/app/google-services.json

@@ -3,8 +3,6 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, S
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { BellRing, CloudOff, CloudUpload, Crown, Download, LogOut, Pencil, Plus, Repeat, Sparkles, Tags, Target, Trash, Upload, UserRound } from 'lucide-react-native';
 import { C, T } from '../theme';
-import { useAppLock } from '../security/AppLock';
-import PinSettings from '../security/PinSettings';
 import { useData } from '../data/DataContext';
 import { categoriesFor, categoryUsage, entriesToCsv, isValidBackup, parseEntriesCsv } from '../data/compute';
 import { pickTextFile, saveToDownloads, shareTextFile } from '../utils/files';
@@ -38,7 +36,6 @@ function Item({ title, body, children }) {
 export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bottomSpace, appVersion }) {
   const { data, appendEntries, replaceAll, clearAll, updateRecurring, removeRecurring, addCategory, removeCategory } = useData();
   const premium = usePremium();
-  const appLock = useAppLock();
   const auth = useAuth();
   const { settings, update } = useSettings();
   const [editingRepeat, setEditingRepeat] = useState(null);
@@ -259,6 +256,16 @@ export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bo
       ]);
     });
 
+  const openAccountDeletionHelp = async () => {
+    const configured = DELETE_ACCOUNT_URL && !DELETE_ACCOUNT_URL.includes('YOUR-') && !DELETE_ACCOUNT_URL.includes('YOUR_');
+    const target = configured ? DELETE_ACCOUNT_URL : `mailto:${SUPPORT_EMAIL}?subject=MoneyLoom%20account%20deletion`;
+    try {
+      await Linking.openURL(target);
+    } catch (e) {
+      Alert.alert('Account deletion help', `Email ${SUPPORT_EMAIL} to request account deletion.`);
+    }
+  };
+
   const confirmDeleteAccount = () => {
     Alert.alert(
       'Delete your account?',
@@ -407,7 +414,6 @@ export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bo
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomSpace, gap: 14 }}>
       <Text style={[T.h1, { fontSize: 28 }]}>More</Text>
-      <PinSettings lock={appLock} />
 
       {auth.user ? (
         <Card>
@@ -697,9 +703,12 @@ export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bo
         <Card style={{ paddingVertical: 12 }}>
           <Text style={T.h3}>Delete your account</Text>
           <Text style={[T.small, { marginTop: 2, lineHeight: 18 }]}>
-            Unlinks your Google account and deletes the cloud backup. You can also do this at {DELETE_ACCOUNT_URL.replace('https://', '')}.
+            Deletes your MoneyLoom cloud backup and backup history, then unlinks your Google sign-in. Entries stored only on this phone are kept unless you delete them separately.
           </Text>
-          <GhostButton label="Delete account" color={C.loss} icon={<Trash size={16} color={C.loss} />} onPress={confirmDeleteAccount} style={{ marginTop: 12 }} />
+          <View style={{ marginTop: 12, gap: 8 }}>
+            <GhostButton label="Delete account" color={C.loss} icon={<Trash size={16} color={C.loss} />} onPress={confirmDeleteAccount} />
+            <Text style={s.footerLink} onPress={openAccountDeletionHelp}>Account deletion help</Text>
+          </View>
         </Card>
       )}
 

@@ -127,8 +127,14 @@ export async function readCloudBackup(uid) {
 
 export async function deleteCloudBackup(uid) {
   try {
-    const { versions } = await listCloudVersions(uid);
-    await Promise.all((versions || []).map((v) => deleteDoc(versionDoc(uid, v.id)).catch(() => {})));
+    const history = await listCloudVersions(uid);
+    if (history.error) return { error: history.error };
+
+    // Do not silently ignore a failed history deletion. Account deletion should only
+    // continue once every version we know about has been removed successfully.
+    await Promise.all(
+      (history.versions || []).map((v) => withTimeout(deleteDoc(versionDoc(uid, v.id))))
+    );
     await withTimeout(deleteDoc(userDoc(uid)));
     return { ok: true };
   } catch (e) {
