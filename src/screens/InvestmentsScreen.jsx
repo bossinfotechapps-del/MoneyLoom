@@ -119,6 +119,7 @@ export default function InvestmentsScreen({ onAdd, onEdit, onToast, bottomSpace 
                 <Text style={[T.body, { fontWeight: '600' }]} numberOfLines={1}>{t.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
                   <Tag label={t.type} />
+                  {t.planned && <Tag label="Planned · not invested" />}
                   <Text style={T.small}>{fmtDate(t.date)}</Text>
                 </View>
               </View>
@@ -149,7 +150,7 @@ export default function InvestmentsScreen({ onAdd, onEdit, onToast, bottomSpace 
 
 const s = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  holding: { paddingVertical: 12 },
+  holding: { paddingVertical: 14 },
   updateHint: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 2 },
-  txn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 6, paddingVertical: 10 },
+  txn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 6, paddingVertical: 13 },
 });

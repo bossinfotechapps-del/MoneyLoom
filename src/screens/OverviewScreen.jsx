@@ -19,6 +19,8 @@ import CategoryTrendSheet from '../components/CategoryTrendSheet';
 import SavingRateCard from '../components/SavingRateCard';
 import UpcomingCard from '../components/UpcomingCard';
 import UpcomingSheet from '../components/UpcomingSheet';
+import CashFlowCard from '../components/CashFlowCard';
+import CashFlowSheet from '../components/CashFlowSheet';
 
 const SCREEN_PAD = 16;
 const CARD_PAD = 16;
@@ -50,7 +52,7 @@ export default function OverviewScreen({
 
   const m = totals[key] || ZERO_MONTH;
   const prev = totals[prevKey] || ZERO_MONTH;
-  const empty = data.entries.length === 0 && data.investments.length === 0 && (data.debts || []).length === 0;
+  const empty = data.entries.length === 0 && data.investments.length === 0 && (data.debts || []).length === 0 && !(data.recurring || []).length && !(data.accounts || []).length && !Object.keys(data.budgets || {}).length;
 
   // Width available for chart plots inside a card
   const plotWidth = width - SCREEN_PAD * 2 - CARD_PAD * 2 - Y_LABEL_W - 8;
@@ -71,7 +73,7 @@ export default function OverviewScreen({
     const t = {};
     const p = {};
     data.entries.forEach((e) => {
-      if (e.kind !== 'expense') return;
+      if (e.planned || e.date > todayStr() || e.kind !== 'expense') return;
       const k = periodOf(e.date);
       if (k === key) t[e.category] = (t[e.category] || 0) + e.amount;
       else if (k === prevKey) p[e.category] = (p[e.category] || 0) + e.amount;
@@ -90,6 +92,7 @@ export default function OverviewScreen({
   const [selectedSlice, setSelectedSlice] = useState(null);
   const [trendCategory, setTrendCategory] = useState(null);
   const [duesOpen, setDuesOpen] = useState(false);
+  const [cashFlowOpen, setCashFlowOpen] = useState(false);
   useEffect(() => setSelectedSlice(null), [key]);
   const donut = useMemo(() => {
     const spentCats = cats.filter((c) => c.amt > 0);
@@ -123,7 +126,7 @@ export default function OverviewScreen({
     let now = 0;
     let before = 0;
     data.entries.forEach((e) => {
-      if (e.kind !== 'expense') return;
+      if (e.planned || e.date > todayStr() || e.kind !== 'expense') return;
       const k = periodOf(e.date);
       if (k === key && dayIndex(e.date, key) <= elapsed) now += e.amount;
       else if (k === prevKey && dayIndex(e.date, prevKey) <= prevLimit) before += e.amount;
@@ -135,7 +138,7 @@ export default function OverviewScreen({
   const biggest = useMemo(
     () =>
       data.entries
-        .filter((e) => e.kind === 'expense' && inPeriod(e.date, key))
+        .filter((e) => !e.planned && e.date <= todayStr() && e.kind === 'expense' && inPeriod(e.date, key))
         .sort((x, y) => y.amount - x.amount)
         .slice(0, 5),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -197,7 +200,9 @@ export default function OverviewScreen({
   const earnedLine = trend.map((t) => ({ value: Math.max(t.earned, 0) }));
 
   return (
-    <ScrollView contentContainerStyle={{ padding: SCREEN_PAD, paddingBottom: bottomSpace, gap: 14 }}>
+    <>
+    <ScrollView contentContainerStyle={{ padding: SCREEN_PAD, paddingBottom: bottomSpace, gap: 16 }}>
+      <Text style={s.eyebrow}>YOUR OVERVIEW</Text>
       <Segmented options={[['weekly', 'Week'], ['monthly', 'Month'], ['fy', 'FY']]} value={weekly ? 'weekly' : 'monthly'} onChange={setPeriod} />
 
       {/* Period hero */}
@@ -245,6 +250,8 @@ export default function OverviewScreen({
           { label: 'Left over', value: fmt(left), color: left < 0 ? C.loss : C.ink, note: saveRate === null ? 'Add income to see saving rate' : `Saving rate ${pct(saveRate)}` },
         ]}
       />
+
+      <CashFlowCard onOpen={() => setCashFlowOpen(true)} />
 
       <UpcomingCard onOpenAll={() => setDuesOpen(true)} />
 
@@ -373,9 +380,9 @@ export default function OverviewScreen({
               const fixedMonthly = !!data.fixedMonthlyCategories?.[c.name];
               const monthlyLimit = weekly && (fixedMonthly || data.budgetPeriod === 'monthly') ? Number(data.budgets?.[c.name] || 0) : 0;
               const monthlyPaid = monthlyLimit ? data.entries.reduce((sum, e) =>
-                sum + (e.kind === 'expense' && e.category === c.name && monthKey(e.date) === monthKey(key) ? Number(e.amount) || 0 : 0), 0) : 0;
+                sum + (!e.planned && e.date <= todayStr() && e.kind === 'expense' && e.category === c.name && monthKey(e.date) === monthKey(key) ? Number(e.amount) || 0 : 0), 0) : 0;
               const displayAmount = fixedMonthly ? data.entries.reduce((sum, e) =>
-                sum + (e.kind === 'expense' && e.category === c.name && monthKey(e.date) === monthKey(key) ? Number(e.amount) || 0 : 0), 0) : c.amt;
+                sum + (!e.planned && e.date <= todayStr() && e.kind === 'expense' && e.category === c.name && monthKey(e.date) === monthKey(key) ? Number(e.amount) || 0 : 0), 0) : c.amt;
               const displayBudget = fixedMonthly ? Number(data.budgets?.[c.name] || 0) : c.budget;
               const status = budgetStatus(displayAmount, displayBudget);
               const barColor = status ? (status.level === 'over' ? C.loss : status.level === 'near' ? C.warn : C.invest) : C.spend;
@@ -466,12 +473,20 @@ export default function OverviewScreen({
         )}
       </Card>
 
+    </ScrollView>
       {duesOpen && <UpcomingSheet onClose={() => setDuesOpen(false)} />}
+      {cashFlowOpen && (
+        <CashFlowSheet
+          onClose={() => setCashFlowOpen(false)}
+          onOpenDues={() => { setCashFlowOpen(false); setDuesOpen(true); }}
+          onOpenAccounts={() => { setCashFlowOpen(false); onOpenWealth('accounts'); }}
+        />
+      )}
 
       {trendCategory && (
         <CategoryTrendSheet category={trendCategory} onClose={() => setTrendCategory(null)} onOpenBudgets={onOpenBudgets} />
       )}
-    </ScrollView>
+    </>
   );
 }
 
@@ -499,8 +514,9 @@ function DonutCenter({ slice, total }) {
 }
 
 const s = StyleSheet.create({
+  eyebrow: { fontSize: 11, fontWeight: '800', color: C.invest, letterSpacing: 1.4, paddingHorizontal: 2, marginBottom: -8 },
   monthRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: -10 },
-  heroLine: { fontSize: 17, lineHeight: 25, color: C.inkSoft, marginTop: 6 },
+  heroLine: { fontSize: 16, lineHeight: 25, color: C.inkSoft, marginTop: 8 },
   heroNum: { fontWeight: '800' },
   legend: { flexDirection: 'row', gap: 16, marginBottom: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

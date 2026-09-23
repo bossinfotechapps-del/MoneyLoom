@@ -1,13 +1,13 @@
 // Colour tokens and shared text styles for MoneyLoom
 export const C = {
-  paper: '#EDF1EE',
-  surface: '#FBFCFB',
+  paper: '#F4F8F6',
+  surface: '#FFFFFF',
   ink: '#1E2A2B',
-  inkSoft: '#3E4B4A',
+  inkSoft: '#354642',
   muted: '#66736F',
-  line: '#D5DDD8',
-  lineSoft: '#E4EAE6',
-  chip: '#E1E8E4',
+  line: '#DAE6E0',
+  lineSoft: '#EBF2EE',
+  chip: '#E8F0EC',
   spend: '#A63A5B',
   invest: '#1D6B66',
   investDark: '#175A56',
@@ -52,10 +52,10 @@ export const faded = (hex) => `${hex}59`;
 
 export const T = {
   num: { fontVariant: ['tabular-nums'] },
-  h1: { fontSize: 34, fontWeight: '800', letterSpacing: -1, color: C.ink },
-  h2: { fontSize: 17, fontWeight: '700', color: C.ink },
+  h1: { fontSize: 30, fontWeight: '800', letterSpacing: -0.85, color: C.ink },
+  h2: { fontSize: 18, fontWeight: '800', letterSpacing: -0.45, color: C.ink },
   h3: { fontSize: 14, fontWeight: '700', color: C.ink },
   body: { fontSize: 15, color: C.ink },
-  small: { fontSize: 13, color: C.muted },
+  small: { fontSize: 13, lineHeight: 19, color: C.muted },
   label: { fontSize: 13, fontWeight: '600', color: C.inkSoft },
 };

@@ -215,7 +215,7 @@ export default function DebtDetailSheet({ debtId, onClose, onToast }) {
               {r.missed.map((ev) => (
                 <View key={ev.key} style={s.historyRow}>
                   <Text style={[T.body, { flex: 1 }]}>{`${ev.label}, ${fmtDate(ev.date)}, ${fmt(ev.amount)}`}</Text>
-                  <GhostButton label="Mark paid" onPress={() => confirmDebtEvent(debt.id, ev, true)} style={{ paddingVertical: 6, paddingHorizontal: 10 }} />
+                  <GhostButton label="Record payment" onPress={() => setDialog({ type: 'scheduledPay', ev })} style={{ paddingVertical: 6, paddingHorizontal: 10 }} />
                 </View>
               ))}
             </Card>
@@ -250,6 +250,23 @@ export default function DebtDetailSheet({ debtId, onClose, onToast }) {
           </View>
 
 
+      {dialog?.type === 'scheduledPay' && (
+        <AmountDateDialog
+          title="Confirm actual payment"
+          subtitle={`${debt.name} · ${fmtDate(dialog.ev.date)} · ${fmt(dialog.ev.amount)} remaining`}
+          initialAmount={dialog.ev.amount}
+          maximumDate={new Date()}
+          dateLabel="Actual payment date"
+          saveLabel="Confirm"
+          onClose={() => setDialog(null)}
+          onSave={({ amount, date }) => {
+            if (date > today) { Alert.alert('Future date', 'Confirm only a payment that has happened.'); return false; }
+            if (amount > dialog.ev.amount && !(k === 'loan' || (k === 'gold' && debt.goldStyle === 'emi'))) { Alert.alert('Amount too high', 'Record no more than the outstanding instalment.'); return false; }
+            confirmDebtEvent(debt.id, dialog.ev, { status: 'paid', amount, date });
+            onToast('Payment recorded');
+          }}
+        />
+      )}
       {dialog?.type === 'prepay' && (
         <AmountDateDialog
           title="Record prepayment"

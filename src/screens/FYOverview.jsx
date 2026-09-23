@@ -6,7 +6,7 @@ import { C, T, categoryColor, faded } from '../theme';
 import { useData } from '../data/DataContext';
 import { ZERO_MONTH } from '../data/constants';
 import {
-  addFY, axisMonth, currentFY, currentMonth, fyEnd, fyFirstDay, fyLabel, fyMonths, thinLabels,
+  addFY, axisMonth, currentFY, currentMonth, fyEnd, fyFirstDay, fyLabel, fyMonths, thinLabels, todayStr,
 } from '../utils/dates';
 import { compact, fmt, fmtSigned, niceMax, pct } from '../utils/format';
 import { Bar, Card, Dot, KpiGrid, SectionHeader, Segmented } from '../components/ui';
@@ -52,7 +52,7 @@ export default function FYOverview({ fy, setFY, period, setPeriod, onOpenMonth, 
     const t = {};
     const p = {};
     data.entries.forEach((e) => {
-      if (e.kind !== 'expense') return;
+      if (e.planned || e.date > todayStr() || e.kind !== 'expense') return;
       if (e.date >= from && e.date <= to) t[e.category] = (t[e.category] || 0) + e.amount;
       else if (e.date >= prevFrom && e.date <= prevTo) p[e.category] = (p[e.category] || 0) + e.amount;
     });
@@ -101,7 +101,8 @@ export default function FYOverview({ fy, setFY, period, setPeriod, onOpenMonth, 
   const biggestCat = cats[0];
 
   return (
-    <ScrollView contentContainerStyle={{ padding: SCREEN_PAD, paddingBottom: bottomSpace, gap: 14 }}>
+    <ScrollView contentContainerStyle={{ padding: SCREEN_PAD, paddingBottom: bottomSpace, gap: 16 }}>
+      <Text style={{ color: C.invest, fontSize: 11, fontWeight: '800', letterSpacing: 1.4, paddingHorizontal: 2 }}>YOUR OVERVIEW</Text>
       <Segmented options={[['weekly', 'Week'], ['monthly', 'Month'], ['fy', 'FY']]} value={period} onChange={setPeriod} />
 
       <View>

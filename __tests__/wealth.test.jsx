@@ -8,6 +8,8 @@ import WealthScreen from '../src/screens/WealthScreen';
 import DebtSheet from '../src/components/DebtSheet';
 import DebtDetailSheet from '../src/components/DebtDetailSheet';
 import ConfirmPayments from '../src/components/ConfirmPayments';
+import AmountDateDialog from '../src/components/AmountDateDialog';
+import { todayStr } from '../src/utils/dates';
 import { makeSampleData } from '../src/data/sample';
 import { AUTH_MODE_KEY, STORAGE_KEY } from '../src/data/constants';
 
@@ -77,6 +79,8 @@ describe('Wealth, debts and net worth', () => {
     const paidBtn = r.root.findAll((n) => typeof n.props.onPress === 'function' && n.findAllByType(Text).some((t) => t.props.children === 'Paid'))[0];
     if (paidBtn) {
       await act(async () => { paidBtn.props.onPress(); });
+      const confirmation = r.root.findByType(AmountDateDialog);
+      await act(async () => { confirmation.props.onSave({ amount: confirmation.props.initialAmount, date: todayStr(), switchOn: false }); });
       await flush();
       expect(ctx.data.entries.length).toBe(before + 1);
       expect(Object.values(ctx.data.debts.find((d) => d.id === loan.id).statuses)).toContain('paid');

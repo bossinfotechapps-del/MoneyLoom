@@ -8,9 +8,10 @@ import { fmtDate, monthKey, monthLabel, todayStr } from '../utils/dates';
 import { fmt } from '../utils/format';
 import ConfirmPayments from './ConfirmPayments';
 import SheetScreen from './SheetScreen';
-import { Card, KpiGrid, SectionHeader, Segmented } from './ui';
+import { Card, ChipScroller, KpiGrid, SectionHeader } from './ui';
 
 const RANGES = [
+  ['month', 'This month'],
   ['30', 'Next 30 days'],
   ['60', 'Next 60 days'],
   ['90', 'Next 90 days'],
@@ -31,9 +32,10 @@ export default function UpcomingSheet({ onClose }) {
   const { data } = useData();
   const today = todayStr();
   const [range, setRange] = useState('30');
-  const days = Number(range);
+  const days = range === 'month' ? 30 : Number(range);
+  const thisMonth = range === 'month';
 
-  const upcoming = useMemo(() => computeUpcoming(data, today, days), [data, today, days]);
+  const upcoming = useMemo(() => computeUpcoming(data, today, days, { thisMonth }), [data, today, days, thisMonth]);
 
   // Grouped by month, so a 90-day view reads as three lists rather than one long one
   const groups = useMemo(() => {
@@ -52,7 +54,8 @@ export default function UpcomingSheet({ onClose }) {
 
   return (
     <SheetScreen title="EMIs and dues" subtitle="What's coming, and when" onClose={onClose}>
-          <Segmented options={RANGES} value={range} onChange={setRange} />
+          <View style={s.tabs}><ChipScroller options={RANGES} value={range} onChange={setRange} /></View>
+          {thisMonth && <Text style={T.small}>Calendar month: 1st to last day, including this month's unpaid earlier dues.</Text>}
 
           <ConfirmPayments />
 
@@ -76,7 +79,7 @@ export default function UpcomingSheet({ onClose }) {
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <CalendarClock size={26} color={C.muted} />
               <Text style={[T.body, { color: C.muted, marginTop: 10, textAlign: 'center' }]}>
-                {`Nothing due in the next ${days} days. Loans, cards and monthly repeats show up here.`}
+                {thisMonth ? 'Nothing due this month. Loans, cards and monthly repeats show up here.' : `Nothing due in the next ${days} days. Loans, cards and monthly repeats show up here.`}
               </Text>
             </Card>
           ) : (
@@ -115,9 +118,10 @@ export default function UpcomingSheet({ onClose }) {
 }
 
 const s = StyleSheet.create({
+  tabs: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.line, padding: 8 },
   alert: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FCEBEB', borderRadius: 14, padding: 12 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.lineSoft,
   },
   when: { width: 76 },

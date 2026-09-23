@@ -206,8 +206,8 @@ export default function WealthScreen({ segment, setSegment, onAddInvestment, onE
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10 }}>
-        <Card style={{ paddingVertical: 12 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 6, gap: 10 }}>
+        <Card style={{ paddingVertical: 16, backgroundColor: '#F0F8F4', borderColor: '#CFE5D9' }}>
           <View style={s.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={T.label}>Net worth</Text>
@@ -247,9 +247,9 @@ export default function WealthScreen({ segment, setSegment, onAddInvestment, onE
 
 const s = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  netWorth: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+  netWorth: { fontSize: 29, fontWeight: '800', letterSpacing: -0.75, marginTop: 2, marginBottom: 2 },
   ownBar: { flexDirection: 'row', height: 7, borderRadius: 9, overflow: 'hidden', marginTop: 8, backgroundColor: C.lineSoft },
-  debtCard: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.line, padding: 14, overflow: 'hidden' },
+  debtCard: { backgroundColor: C.surface, borderRadius: 19, borderWidth: 1, borderColor: C.line, padding: 15, overflow: 'hidden', elevation: 1 },
   badge: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 8 },
   closedToggle: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
 });

@@ -13,7 +13,7 @@ import { GhostButton, LabeledInput, PrimaryButton } from './ui';
  */
 export default function AmountDateDialog({
   title, subtitle, label = 'Amount (₹)', initialAmount = '', initialDate, hint, dateLabel = 'Date',
-  switchLabel, switchInitial = false, allowZero = false, saveLabel = 'Save', onSave, onClose,
+  switchLabel, switchInitial = false, allowZero = false, saveLabel = 'Save', onSave, onClose, maximumDate,
 }) {
   const [amount, setAmount] = useState(String(initialAmount ?? ''));
   const [date, setDate] = useState(initialDate || todayStr());
@@ -27,8 +27,8 @@ export default function AmountDateDialog({
       setError(allowZero ? 'Enter a number, 0 or more.' : 'Enter an amount greater than zero.');
       return;
     }
-    onSave({ amount: Math.round(n * 100) / 100, date, switchOn });
-    onClose();
+    const accepted = onSave({ amount: Math.round(n * 100) / 100, date, switchOn });
+    if (accepted !== false) onClose();
   };
 
   return (
@@ -51,7 +51,7 @@ export default function AmountDateDialog({
             hint={hint}
             inputStyle={{ fontSize: 22, fontWeight: '800' }}
           />
-          <DateField style={{ marginTop: 12 }} label={dateLabel} value={date} onChange={setDate} />
+          <DateField style={{ marginTop: 12 }} label={dateLabel} value={date} onChange={setDate} maximumDate={maximumDate} />
           {switchLabel ? (
             <View style={s.switchRow}>
               <Text style={[T.body, { flex: 1 }]}>{switchLabel}</Text>

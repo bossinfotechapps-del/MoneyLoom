@@ -3,6 +3,20 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useEnsureVisible } from './KeyboardAwareScroll';
 import { C, T } from '../theme';
 
+/** A shared page heading; existing tabs, charts and screen actions remain untouched. */
+export function ScreenHeading({ title, subtitle, eyebrow, right, style }) {
+  return (
+    <View style={[s.screenHeading, style]}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        {eyebrow ? <Text style={s.eyebrow}>{eyebrow}</Text> : null}
+        <Text style={T.h1} numberOfLines={2}>{title}</Text>
+        {subtitle ? <Text style={[T.small, { marginTop: 3 }]}>{subtitle}</Text> : null}
+      </View>
+      {right}
+    </View>
+  );
+}
+
 export function Card({ style, children }) {
   return <View style={[s.card, style]}>{children}</View>;
 }
@@ -185,7 +199,7 @@ export function KpiGrid({ items }) {
   return (
     <View style={s.kpiGrid}>
       {items.map((it) => (
-        <View key={it.label} style={[s.kpiCell, { width: items.length === 3 ? '33.33%' : '50%' }]}>
+        <View key={it.label} style={[s.kpiCell, { width: items.length === 3 ? '31.5%' : '48.5%' }, it.color && { borderTopWidth: 3, borderTopColor: it.color, paddingTop: 14 }]}>
           <Text style={T.label}>{it.label}</Text>
           <Text style={[s.kpiValue, T.num, { color: it.color || C.ink }]} numberOfLines={1} adjustsFontSizeToFit>
             {it.value}
@@ -233,39 +247,38 @@ export function EmptyState({ title, body, children }) {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.line, padding: 16 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 8 },
+  screenHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 3, paddingHorizontal: 2, paddingTop: 4 },
+  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 1.4, color: C.invest, marginBottom: 5 },
+  card: { backgroundColor: C.surface, borderRadius: 20, borderWidth: 1, borderColor: C.line, padding: 18, elevation: 1 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: C.invest, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 12, overflow: 'hidden',
+    backgroundColor: C.invest, minHeight: 46, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 14, overflow: 'hidden',
   },
   primaryText: { color: C.white, fontWeight: '700', fontSize: 15 },
   ghostBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    borderWidth: 1, borderColor: C.line, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, overflow: 'hidden',
+    borderWidth: 1, borderColor: C.line, backgroundColor: C.surface, minHeight: 44, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 13, overflow: 'hidden',
   },
   ghostText: { fontWeight: '600', fontSize: 14 },
-  seg: { flexDirection: 'row', backgroundColor: C.chip, borderRadius: 12, padding: 3 },
-  segItem: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
-  segItemOn: { backgroundColor: C.surface, elevation: 1 },
-  segText: { fontWeight: '600', fontSize: 14, color: '#4A5755' },
+  seg: { flexDirection: 'row', backgroundColor: C.chip, borderRadius: 16, padding: 4, gap: 3, borderWidth: 1, borderColor: C.lineSoft },
+  segItem: { flex: 1, minHeight: 42, paddingVertical: 10, paddingHorizontal: 2, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  segItemOn: { backgroundColor: C.surface, elevation: 1, borderWidth: 1, borderColor: C.line },
+  segText: { fontWeight: '700', fontSize: 13, color: C.inkSoft, textAlign: 'center' },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.chip, borderWidth: 1, borderColor: C.chip },
+  chip: { minHeight: 37, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 13, borderRadius: 999, backgroundColor: C.chip, borderWidth: 1, borderColor: C.lineSoft },
   chipOn: { backgroundColor: C.invest, borderColor: C.invest },
   chipAdd: { backgroundColor: 'transparent', borderColor: C.invest, borderStyle: 'dashed' },
   chipText: { fontSize: 13, fontWeight: '600', color: C.inkSoft },
   chipTextOn: { color: C.white },
   input: {
-    borderWidth: 1, borderColor: '#CBD5CF', backgroundColor: C.white, borderRadius: 10,
+    borderWidth: 1, borderColor: '#CCDCD4', backgroundColor: C.white, borderRadius: 13,
     paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.ink,
   },
-  kpiGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', backgroundColor: C.surface,
-    borderRadius: 16, borderWidth: 1, borderColor: C.line, overflow: 'hidden',
-  },
-  kpiCell: { paddingHorizontal: 14, paddingVertical: 12, borderColor: C.lineSoft, borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
-  kpiValue: { fontSize: 25, fontWeight: '800', letterSpacing: -0.7, marginTop: 1, marginBottom: 1 },
-  barTrack: { height: 8, backgroundColor: C.lineSoft, borderRadius: 99, overflow: 'hidden' },
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 9 },
+  kpiCell: { backgroundColor: C.surface, borderRadius: 18, paddingHorizontal: 15, paddingVertical: 16, borderWidth: 1, borderColor: C.line, elevation: 1, minHeight: 116 },
+  kpiValue: { fontSize: 24, fontWeight: '800', letterSpacing: -0.75, marginTop: 7, marginBottom: 4 },
+  barTrack: { height: 9, backgroundColor: C.chip, borderRadius: 99, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 99 },
   tag: { backgroundColor: C.lineSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1, maxWidth: 170 },
   tagText: { fontSize: 12, fontWeight: '600', color: C.inkSoft },

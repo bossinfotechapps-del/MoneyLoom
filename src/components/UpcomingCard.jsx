@@ -32,7 +32,7 @@ export default function UpcomingCard({ days = 30, onOpenAll }) {
     <Card>
       <SectionHeader
         title={`Next ${days} days`}
-        subtitle="Payments from your loans, cards and monthly repeats"
+        subtitle="Upcoming payments, investments and expected receipts"
         right={
           onOpenAll ? (
             <Pressable onPress={onOpenAll} hitSlop={8} accessibilityRole="button" accessibilityLabel="See all EMIs and dues">

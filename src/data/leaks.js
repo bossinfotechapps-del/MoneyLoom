@@ -30,7 +30,7 @@ const stepBack = (key, n, weekly) => (weekly ? addWeeks(key, -n) : addMonths(key
 
 const expensesIn = (entries, key, weekly) => {
   const { from, to } = rangeOf(key, weekly);
-  return entries.filter((e) => e.kind === 'expense' && e.date >= from && e.date <= to);
+  return entries.filter((e) => !e.planned && e.kind === 'expense' && e.date >= from && e.date <= to);
 };
 
 // Average spend per past period for a category, ignoring periods with nothing logged

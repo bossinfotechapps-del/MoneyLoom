@@ -3,8 +3,9 @@ import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EMPTY_DATA, STORAGE_KEY } from './constants';
 import { applyRecurring, categoriesFor, computeByMonth, computeByWeek, computeHoldings, monthsWithData, normalizeData, templateFrom } from './compute';
-import { applyDebtAutoPostings, computeNetWorth, entryForEvent, upsertNetWorthSnapshot } from './debts';
+import { applyDebtAutoPostings, computeDebt, computeNetWorth, entryForEvent, upsertNetWorthSnapshot } from './debts';
 import { addMonths, currentMonth, monthKey, todayStr } from '../utils/dates';
+import { addRepeatPayment, markRepeatStatus } from './paymentSchedule';
 import { uid } from '../utils/format';
 
 const DataContext = createContext(null);
@@ -112,7 +113,7 @@ export function DataProvider({ children }) {
     const key = tab === 'investment' ? 'investments' : 'entries';
     setData((d) => ({
       ...d,
-      [key]: isEdit ? d[key].map((x) => (x.id === record.id ? record : x)) : [...d[key], record],
+      [key]: isEdit ? d[key].map((x) => (x.id === record.id ? { ...record, planned: record.date > todayStr() ? true : record.planned === true ? true : false } : x)) : [...d[key], { ...record, planned: record.date > todayStr() }],
     }));
   }, []);
 
@@ -126,14 +127,32 @@ export function DataProvider({ children }) {
       template: templateFrom(tab, record),
       day: Number(record.date.slice(8, 10)),
       startMonth: monthKey(record.date),
-      lastPostedMonth: monthKey(record.date),
+      lastPostedMonth: record.date > todayStr() ? addMonths(monthKey(record.date), -1) : monthKey(record.date),
+      confirmationMode: 'ask',
       active: true,
       createdOn: todayStr(),
     };
-    const linked = { ...record, recurringId: rule.id };
-    const backfill = applyRecurring({ entries: [], investments: [], recurring: [rule] }).posted;
-    setData((d) => applyRecurring({ ...d, [key]: [...d[key], linked], recurring: [...d.recurring, rule] }).data);
-    return backfill;
+    const linked = { ...record, recurringId: rule.id, planned: record.date > todayStr() };
+    setData((d) => ({ ...d, [key]: [...d[key], linked], recurring: [...d.recurring, rule] }));
+    return 0;
+  }, []);
+
+  const confirmOneOffPlan = useCallback((key, id, payment) => {
+    setData(d => {
+      if (key !== 'entries' && key !== 'investments') return d;
+      const record = d[key].find(x => x.id === id && x.planned && !x.recurringId);
+      if (!record || !Number.isFinite(Number(payment.amount)) || Number(payment.amount) <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(payment.date || '') || payment.date > todayStr()) return d;
+      const amount = Number(payment.amount);
+      const rest = Math.round((Number(record.amount) - amount) * 100) / 100;
+      const actual = { ...record, amount, date: payment.date, planned: false, planStatus: 'paid' };
+      const remaining = rest > 0 ? [{ ...record, id: uid(), amount: rest, planStatus: 'partial', note: record.note || '' }] : [];
+      return { ...d, [key]: [...d[key].map(r => r.id === id ? actual : r), ...remaining] };
+    });
+  }, []);
+
+  const markOneOffPlan = useCallback((key, id, status) => {
+    if (status !== 'missed' && status !== 'later') return;
+    setData(d => ({ ...d, [key]: d[key].map(r => r.id === id && r.planned ? { ...r, planStatus: status } : r) }));
   }, []);
 
   const updateRecurring = useCallback((id, patch) => {
@@ -153,6 +172,14 @@ export function DataProvider({ children }) {
       };
       return patch.active ? applyRecurring(next).data : next;
     });
+  }, []);
+
+  const confirmRepeatPayment = useCallback((ruleId, month, payment, coverEarlier, existingId) => {
+    setData(d => addRepeatPayment(d, ruleId, month, payment, coverEarlier, existingId));
+  }, []);
+
+  const markScheduledRepeat = useCallback((ruleId, month, status) => {
+    setData(d => markRepeatStatus(d, ruleId, month, status));
   }, []);
 
   const removeRecurring = useCallback((id) => {
@@ -176,17 +203,74 @@ export function DataProvider({ children }) {
     setData((d) => ({ ...d, debts: d.debts.filter((x) => x.id !== id) }));
   }, []);
 
-  // User answered "Paid" or "Not paid" for a scheduled payment
-  const confirmDebtEvent = useCallback((debtId, ev, paid) => {
-    setData((d) => {
-      const debt = d.debts.find((x) => x.id === debtId);
-      if (!debt) return d;
-      const debts = d.debts.map((x) => (x.id === debtId ? { ...x, statuses: { ...(x.statuses || {}), [ev.key]: paid ? 'paid' : 'missed' } } : x));
-      if (!paid) return { ...d, debts };
-      const e = entryForEvent({ ...debt, recordMode: 'ask' }, ev);
-      if (!e) return { ...d, debts };
-      const key = e.tab === 'investment' ? 'investments' : 'entries';
-      return { ...d, debts, [key]: [...d[key], e.record] };
+  // Actual payment amount and date are confirmed by the user, never inferred
+  // from the due date. A partially paid instalment remains on the due list.
+  const confirmDebtEvent = useCallback((debtId, ev, answer) => {
+    setData(d => {
+      const debt = d.debts.find(x => x.id === debtId);
+      if (!debt || !ev || !ev.key) return d;
+      const response = typeof answer === 'boolean' ? { status: answer ? 'paid' : 'missed', amount: ev.amount, date: todayStr() } : answer;
+      const status = response?.status;
+      if (status === 'missed' || status === 'later') {
+        return { ...d, debts: d.debts.map(x => x.id === debtId ? { ...x, statuses: { ...(x.statuses || {}), [ev.key]: status } } : x) };
+      }
+      if (status !== 'paid') return d;
+      const amount = Number(response?.amount);
+      const date = response?.date;
+      const alreadyPaid = Number(debt.paymentAmounts?.[ev.key]) || 0;
+      if (!Number.isFinite(amount) || amount <= 0 || date > todayStr() || !/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return d;
+      const due = Number(ev.originalAmount) || Number(ev.amount) + alreadyPaid;
+      const extra = Math.max(0, alreadyPaid + amount - due);
+      if (extra > 0 && !(debt.kind === 'loan' || (debt.kind === 'gold' && debt.goldStyle === 'emi'))) return d;
+      const paidTotal = Math.min(due, alreadyPaid + amount);
+      if (alreadyPaid >= due - 0.01) return d;
+      const nextStatus = paidTotal >= due - 0.01 ? 'paid' : 'partial';
+      const debts = d.debts.map(x => x.id !== debtId ? x : {
+        ...x, statuses: { ...(x.statuses || {}), [ev.key]: nextStatus },
+        paymentAmounts: { ...(x.paymentAmounts || {}), [ev.key]: paidTotal },
+        ...(extra ? { prepayments: [...(x.prepayments || []), { id: uid(), date, amount: extra, fromScheduledPayment: ev.key }] } : {}),
+      });
+      // The full cash amount is saved as one record. Extra debt payment is
+      // also modelled as principal reduction, not another expense entry.
+      const entry = entryForEvent({ ...debt, recordMode: 'ask' }, { ...ev, amount, date });
+      if (!entry) return { ...d, debts };
+      const key = entry.tab === 'investment' ? 'investments' : 'entries';
+      return { ...d, debts, [key]: [...d[key], entry.record] };
+    });
+  }, []);
+
+  // One-off card bills and informal debt due dates use their existing payment
+  // history. Card repayment is not a second expense; money lent returned is
+  // not new income. Hand-loan repayments retain the existing expense behaviour.
+  const confirmManualDebtDue = useCallback((debtId, answer) => {
+    setData(d => {
+      const debt = d.debts.find(x => x.id === debtId);
+      if (!debt || !['card', 'hand', 'lent'].includes(debt.kind)) return d;
+      const due = computeDebt(debt, todayStr()).nextDue;
+      if (!due || due.date > todayStr()) return d;
+      const status = answer?.status;
+      if (status === 'missed' || status === 'later') {
+        return { ...d, debts: d.debts.map(x => x.id !== debtId ? x : {
+          ...x, manualDueStatuses: { ...(x.manualDueStatuses || {}), [due.date]: status },
+        }) };
+      }
+      if (status !== 'paid') return d;
+      const amount = Number(answer.amount);
+      const date = answer.date;
+      if (!Number.isFinite(amount) || amount <= 0 || amount > due.amount + 0.01 ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(date || '') || date > todayStr()) return d;
+      // Avoid an accidental second confirmation of the same recorded payment.
+      if ((debt.payments || []).some(p => p.manualDueKey === due.date && p.date === date && Math.abs(Number(p.amount) - amount) < 0.01)) return d;
+      const payment = { id: uid(), amount, date, manualDueKey: due.date };
+      const nextDebt = { ...debt,
+        payments: [...(debt.payments || []), payment],
+        manualDueStatuses: { ...(debt.manualDueStatuses || {}), [due.date]: amount + 0.01 >= due.amount ? 'paid' : 'partial' },
+      };
+      const next = { ...d, debts: d.debts.map(x => x.id === debtId ? nextDebt : x) };
+      if (debt.kind !== 'hand') return next;
+      const entry = { id: uid(), kind: 'expense', date, amount, category: 'EMI & loans',
+        mode: 'UPI', note: `${debt.name} repayment`, debtId, manualDueKey: due.date };
+      return { ...next, entries: [...d.entries, entry] };
     });
   }, []);
 
@@ -280,7 +364,7 @@ export function DataProvider({ children }) {
   }, []);
 
   const appendEntries = useCallback((rows) => {
-    setData((d) => ({ ...d, entries: [...d.entries, ...rows] }));
+    setData((d) => ({ ...d, entries: [...d.entries, ...rows.map(r => ({ ...r, planned: r.date > todayStr() }))] }));
   }, []);
 
   // Manual goal balances are independent records, not additional bank assets or expenses.
@@ -329,17 +413,17 @@ export function DataProvider({ children }) {
   const value = useMemo(
     () => ({
       data, loaded, saveError, autoPosted, byMonth, byWeek, holdings, months, netWorth,
-      saveRecord, saveRecordWithRepeat, updateRecurring, removeRecurring, setBudgets,
+      saveRecord, saveRecordWithRepeat, updateRecurring, removeRecurring, confirmRepeatPayment, markScheduledRepeat, confirmOneOffPlan, markOneOffPlan, setBudgets,
       removeRecord, setHoldingValue, appendEntries, replaceAll, clearAll,
-      saveDebt, updateDebt, removeDebt, confirmDebtEvent, recordDebtPayment,
+      saveDebt, updateDebt, removeDebt, confirmDebtEvent, confirmManualDebtDue, recordDebtPayment,
       addCategory, removeCategory,
       saveAccount, updateAccountBalance, removeAccount, saveGoal, removeGoal, moveGoalMoney, updateGoalTransaction, removeGoalTransaction,
     }),
     [
       data, loaded, saveError, autoPosted, byMonth, byWeek, holdings, months, netWorth,
-      saveRecord, saveRecordWithRepeat, updateRecurring, removeRecurring, setBudgets,
+      saveRecord, saveRecordWithRepeat, updateRecurring, removeRecurring, confirmRepeatPayment, markScheduledRepeat, confirmOneOffPlan, markOneOffPlan, setBudgets,
       removeRecord, setHoldingValue, appendEntries, replaceAll, clearAll,
-      saveDebt, updateDebt, removeDebt, confirmDebtEvent, recordDebtPayment,
+      saveDebt, updateDebt, removeDebt, confirmDebtEvent, confirmManualDebtDue, recordDebtPayment,
       addCategory, removeCategory,
       saveAccount, updateAccountBalance, removeAccount, saveGoal, removeGoal, moveGoalMoney, updateGoalTransaction, removeGoalTransaction,
     ]

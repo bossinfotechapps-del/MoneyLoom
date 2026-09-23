@@ -6,8 +6,8 @@ import { toNumber, uid } from '../utils/format';
 const isObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 
 export const normalizeData = (raw) => ({
-  entries: Array.isArray(raw?.entries) ? raw.entries : [],
-  investments: Array.isArray(raw?.investments) ? raw.investments : [],
+  entries: Array.isArray(raw?.entries) ? raw.entries.map(e => e.date > todayStr() && !e.planned ? { ...e, planned: true } : e) : [],
+  investments: Array.isArray(raw?.investments) ? raw.investments.map(e => e.date > todayStr() && !e.planned ? { ...e, planned: true } : e) : [],
   values: isObject(raw?.values) ? raw.values : {},
   recurring: Array.isArray(raw?.recurring) ? raw.recurring : [],
   budgets: isObject(raw?.budgets) ? raw.budgets : {},
@@ -24,18 +24,18 @@ export const normalizeData = (raw) => ({
 });
 
 // Totals per week, keyed by the week's Monday
-export function computeByWeek(data) {
+export function computeByWeek(data, today = todayStr()) {
   const w = {};
   const get = (k) => {
     if (!w[k]) w[k] = { spent: 0, earned: 0, invested: 0 };
     return w[k];
   };
-  data.entries.forEach((e) => {
+  data.entries.filter((e) => !e.planned && e.date <= today).forEach((e) => {
     const g = get(weekStart(e.date));
     if (e.kind === 'income') g.earned += e.amount;
     else g.spent += e.amount;
   });
-  data.investments.forEach((t) => {
+  data.investments.filter((t) => !t.planned && t.date <= today).forEach((t) => {
     get(weekStart(t.date)).invested += netAmount(t);
   });
   return w;
@@ -90,7 +90,9 @@ export function applyRecurring(data, today = todayStr()) {
   const newInvestments = [];
 
   const nextRules = rules.map((r) => {
-    if (!r.active) return r;
+    // Confirmed recurring items are never posted solely because the date arrived.
+    // Explicit legacy auto rules remain supported until switched to Ask me.
+    if (!r.active || r.confirmationMode !== 'auto') return r;
     let k = r.lastPostedMonth ? addMonths(r.lastPostedMonth, 1) : r.startMonth;
     let last = r.lastPostedMonth || null;
     let guard = 0;
@@ -132,18 +134,18 @@ export const isValidBackup = (raw) => Array.isArray(raw?.entries) && Array.isArr
 export const netAmount = (t) => (t.action === 'withdraw' ? -t.amount : t.amount);
 
 // { 'YYYY-MM': { spent, earned, invested } }
-export function computeByMonth(data) {
+export function computeByMonth(data, today = todayStr()) {
   const m = {};
   const get = (k) => {
     if (!m[k]) m[k] = { spent: 0, earned: 0, invested: 0 };
     return m[k];
   };
-  data.entries.forEach((e) => {
+  data.entries.filter((e) => !e.planned && e.date <= today).forEach((e) => {
     const g = get(monthKey(e.date));
     if (e.kind === 'income') g.earned += e.amount;
     else g.spent += e.amount;
   });
-  data.investments.forEach((t) => {
+  data.investments.filter((t) => !t.planned && t.date <= today).forEach((t) => {
     get(monthKey(t.date)).invested += netAmount(t);
   });
   return m;
@@ -151,11 +153,11 @@ export function computeByMonth(data) {
 
 // Holdings grouped by investment name. A saved current value is treated as correct on its date;
 // contributions dated after it are added on top so gains don't look wrong between updates.
-export function computeHoldings(investments, values) {
+export function computeHoldings(investments, values, today = todayStr()) {
   const map = {};
   // Chit instalments are counted as invested each month, but their value lives in the chit itself (debts.js)
   investments
-    .filter((t) => !t.debtId)
+    .filter((t) => !t.planned && !t.debtId && t.date <= today)
     .sort((a, b) => a.date.localeCompare(b.date))
     .forEach((t) => {
       if (!map[t.name]) map[t.name] = { name: t.name, type: t.type, invested: 0, txns: [] };

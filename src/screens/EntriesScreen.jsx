@@ -44,6 +44,7 @@ const EntryRow = memo(function EntryRow({ entry, onEdit, onDelete }) {
         <Text style={[T.body, { fontWeight: '600' }]} numberOfLines={1}>{entry.note || entry.category}</Text>
         <View style={s.meta}>
           <Tag label={entry.category} />
+          {entry.planned && <Tag label="Planned · not confirmed" />}
           <Text style={T.small}>{entry.mode}</Text>
         </View>
       </View>
@@ -94,8 +95,8 @@ export default function EntriesScreen({ onAdd, onEdit, bottomSpace }) {
     return out;
   }, [rows]);
 
-  const spent = rows.reduce((sum, e) => sum + (e.kind === 'expense' ? e.amount : 0), 0);
-  const earned = rows.reduce((sum, e) => sum + (e.kind === 'income' ? e.amount : 0), 0);
+  const spent = rows.reduce((sum, e) => sum + (!e.planned && e.kind === 'expense' ? e.amount : 0), 0);
+  const earned = rows.reduce((sum, e) => sum + (!e.planned && e.kind === 'income' ? e.amount : 0), 0);
 
   const confirmDelete = (entry) => {
     Alert.alert('Delete this entry?', `${entry.note || entry.category}, ${fmt(entry.amount)} on ${fmtDate(entry.date)}`, [
@@ -159,16 +160,16 @@ export default function EntriesScreen({ onAdd, onEdit, bottomSpace }) {
 
 const s = StyleSheet.create({
   search: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white,
-    borderWidth: 1, borderColor: '#CBD5CF', borderRadius: 10, paddingHorizontal: 12,
+    flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: 8, backgroundColor: C.white,
+    borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13,
   },
   searchInput: { flex: 1, fontSize: 15, color: C.ink, paddingVertical: 10 },
   totals: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 2 },
   total: { fontWeight: '800', fontSize: 14 },
-  dateHeader: { fontSize: 13, fontWeight: '700', color: C.muted, marginTop: 14, marginBottom: 6 },
+  dateHeader: { fontSize: 12, fontWeight: '800', letterSpacing: 0.4, color: C.muted, marginTop: 18, marginBottom: 8 },
   rowWrap: { backgroundColor: C.surface, borderLeftWidth: 1, borderRightWidth: 1, borderColor: C.line, overflow: 'hidden' },
-  first: { borderTopWidth: 1, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
-  last: { borderBottomWidth: 1, borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 14, paddingRight: 4, paddingVertical: 10 },
+  first: { borderTopWidth: 1, borderTopLeftRadius: 17, borderTopRightRadius: 17 },
+  last: { borderBottomWidth: 1, borderBottomLeftRadius: 17, borderBottomRightRadius: 17 },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 62, gap: 8, paddingLeft: 14, paddingRight: 4, paddingVertical: 13 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 },
 });

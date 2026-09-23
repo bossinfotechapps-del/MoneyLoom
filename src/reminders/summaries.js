@@ -18,7 +18,7 @@ const safeMonth = (date) => {
 };
 
 const spentBetween = (entries, match) =>
-  entries.filter((e) => e.kind === 'expense' && match(e.date)).reduce((sum, e) => sum + e.amount, 0);
+  entries.filter((e) => !e.planned && e.kind === 'expense' && match(e.date)).reduce((sum, e) => sum + e.amount, 0);
 
 const budgetTotal = (data, period) => {
   const cats = Object.keys(data.budgets || {});
@@ -83,7 +83,7 @@ export function monthStartSummary(data, today = todayStr()) {
   const entries = data.entries || [];
   const spent = spentBetween(entries, (d) => safeMonth(d) === prev);
   const earned = entries
-    .filter((e) => e.kind === 'income' && safeMonth(e.date) === prev)
+    .filter((e) => !e.planned && e.kind === 'income' && safeMonth(e.date) === prev)
     .reduce((sum, e) => sum + e.amount, 0);
   const kept = earned - spent;
   if (earned > 0) {

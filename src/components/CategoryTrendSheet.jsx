@@ -7,7 +7,7 @@ import { useData } from '../data/DataContext';
 import { budgetFor } from '../data/compute';
 import {
   addMonths, addWeeks, axisMonthShort, axisWeekStart, currentMonth, currentWeek, fmtDate, monthKey, monthLabel,
-  thinLabels, weekLabel, weekStart,
+  thinLabels, todayStr, weekLabel, weekStart,
 } from '../utils/dates';
 import { compact, fmt, niceMax, pct } from '../utils/format';
 import SheetScreen from './SheetScreen';
@@ -43,7 +43,7 @@ export default function CategoryTrendSheet({ category, onClose, onOpenBudgets })
   const months = useMemo(() => {
     const totals = {};
     data.entries.forEach((e) => {
-      if (e.kind !== 'expense' || e.category !== category) return;
+      if (e.planned || e.date > todayStr() || e.kind !== 'expense' || e.category !== category) return;
       const k = weekly ? weekStart(e.date) : monthKey(e.date);
       totals[k] = (totals[k] || 0) + e.amount;
     });
@@ -69,7 +69,7 @@ export default function CategoryTrendSheet({ category, onClose, onOpenBudgets })
   const entries = useMemo(
     () =>
       data.entries
-        .filter((e) => e.kind === 'expense' && e.category === category && (weekly ? weekStart(e.date) : monthKey(e.date)) === selected)
+        .filter((e) => !e.planned && e.date <= todayStr() && e.kind === 'expense' && e.category === category && (weekly ? weekStart(e.date) : monthKey(e.date)) === selected)
         .sort((a, b) => b.amount - a.amount),
     [data.entries, category, selected, weekly]
   );
@@ -108,7 +108,7 @@ export default function CategoryTrendSheet({ category, onClose, onOpenBudgets })
   const Direction = stats.direction !== null && stats.direction < 0 ? TrendingDown : TrendingUp;
 
   return (
-    <SheetScreen title={category} subtitle={weekly ? 'Last 6 weeks' : 'Last 6 months'} onClose={onClose}>
+    <SheetScreen title={category} subtitle={weekly ? 'Last 6 weeks' : 'Last 6 months'} onClose={onClose} keyboardAware={false}>
           <Segmented options={[['weekly', 'Week'], ['monthly', 'Month']]} value={period} onChange={changePeriod} />
 
           <KpiGrid

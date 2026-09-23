@@ -1,7 +1,7 @@
 /* eslint-env jest */
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
-import { Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DataProvider } from '../src/data/DataContext';
 import CategoryTrendSheet from '../src/components/CategoryTrendSheet';
@@ -55,6 +55,19 @@ describe('Category trend', () => {
     await AsyncStorage.clear();
     await AsyncStorage.setItem(AUTH_MODE_KEY, 'guest');
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+  });
+
+  test('category detail is scrollable as soon as Month opens, before tapping Week', async () => {
+    let r;
+    await act(async () => {
+      r = ReactTestRenderer.create(<DataProvider><CategoryTrendSheet category="Eating out" onClose={() => {}} /></DataProvider>);
+    });
+    await flush();
+    expect(texts(r)).toMatch(/Month by month/);
+    const vertical = r.root.findAllByType(ScrollView).filter(n => n.props.scrollEnabled === true && n.props.nestedScrollEnabled === true);
+    expect(vertical.length).toBeGreaterThan(0);
+    expect(vertical[0].props.contentContainerStyle.some(x => x && x.flexGrow === 1)).toBe(true);
+    r.unmount();
   });
 
   test('shows the average, the highest month and this month’s entries', async () => {

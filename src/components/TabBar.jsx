@@ -25,7 +25,7 @@ export default function TabBar({ active, onChange, bottomInset }) {
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             android_ripple={{ color: C.lineSoft, borderless: true }}
-            style={s.tab}
+            style={[s.tab, on && s.tabSelected]}
           >
             <Icon size={22} color={color} strokeWidth={on ? 2.4 : 2} />
             <Text style={[s.label, { color, fontWeight: on ? '700' : '600' }]}>{label}</Text>
@@ -37,7 +37,8 @@ export default function TabBar({ active, onChange, bottomInset }) {
 }
 
 const s = StyleSheet.create({
-  bar: { flexDirection: 'row', backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6 },
-  tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 4 },
-  label: { fontSize: 12 },
+  bar: { flexDirection: 'row', backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8, paddingHorizontal: 6, elevation: 8 },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 54, paddingVertical: 7, borderRadius: 15 },
+  tabSelected: { backgroundColor: '#E8F4EE' },
+  label: { fontSize: 11.5, letterSpacing: -0.1 },
 });

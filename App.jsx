@@ -222,7 +222,7 @@ function Main() {
     );
   }
 
-  const titles = { entries: 'Expenses & income', wealth: 'Wealth' };
+  const titles = { entries: { title: 'Expenses & income', eyebrow: 'YOUR ACTIVITY', subtitle: 'Find and review your transactions' }, wealth: { title: 'Wealth', eyebrow: 'FINANCIAL POSITION', subtitle: 'Your accounts, investments and commitments' } };
 
   return (
     <View style={st.root}>
@@ -239,7 +239,9 @@ function Main() {
 
       {titles[tab] && (
         <View style={st.titleBar}>
-          <Text style={[T.h1, { fontSize: 26 }]}>{titles[tab]}</Text>
+          <Text style={st.titleEyebrow}>{titles[tab].eyebrow}</Text>
+          <Text style={[T.h1, { fontSize: 27 }]}>{titles[tab].title}</Text>
+          <Text style={[T.small, { marginTop: 2 }]}>{titles[tab].subtitle}</Text>
         </View>
       )}
 
@@ -267,7 +269,7 @@ function Main() {
             setWeek={setWeek}
             onAdd={openAdd}
             onLoadSample={loadSample}
-            onOpenWealth={() => setTab('wealth')}
+            onOpenWealth={(segment) => { if (segment) setWealthSegment(segment); setTab('wealth'); }}
             onOpenBudgets={() => setBudgetsOpen(true)}
             bottomSpace={LIST_BOTTOM_SPACE}
           />
@@ -365,7 +367,8 @@ function Main() {
 const st = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.paper },
   center: { alignItems: 'center', justifyContent: 'center' },
-  titleBar: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
+  titleBar: { paddingHorizontal: 18, paddingTop: 13, paddingBottom: 11 },
+  titleEyebrow: { color: C.invest, fontSize: 11, fontWeight: '800', letterSpacing: 1.4, marginBottom: 3 },
   saveError: { backgroundColor: C.loss, paddingHorizontal: 16, paddingVertical: 8 },
   fab: {
     position: 'absolute', right: 16, bottom: 16, flexDirection: 'row', alignItems: 'center', gap: 6,

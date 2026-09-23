@@ -213,9 +213,7 @@ export default function EntrySheet({ initial, investmentNames, onSave, onDelete,
                 <Text style={[T.body, { fontWeight: '600' }]}>Repeat every month</Text>
                 <Text style={T.small}>
                   {repeat
-                    ? `Added automatically on day ${Number(form.date.slice(8, 10))} of each month.${
-                        monthKey(form.date) < currentMonth() ? ` Months since ${monthLabel(monthKey(form.date))} are added too.` : ''
-                      }`
+                    ? `MoneyLoom will ask you to confirm each payment on day ${Number(form.date.slice(8, 10))} of the month.`
                     : 'For rent, EMI, salary, SIP and other fixed amounts.'}
                 </Text>
               </View>

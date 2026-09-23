@@ -119,10 +119,12 @@ function simulateLoan(loan, today) {
     const interest = balance * r;
     const amount = Math.min(emi, balance + interest);
     const status = statusOf(loan, ev);
-    if (status === 'paid') {
-      balance = balance + interest - amount;
-      interestPaid += interest;
-      paidCount += 1;
+    const paidAmount = status === 'paid' ? amount : Math.min(amount, Number(loan.paymentAmounts?.[ev.key]) || 0);
+    if (paidAmount > 0) {
+      balance = balance + interest - paidAmount;
+      interestPaid += Math.min(interest, paidAmount);
+      if (paidAmount >= amount - 0.01) paidCount += 1;
+      else (status === 'missed' ? missed : pending).push({ ...ev, amount: round(amount - paidAmount), label: 'EMI (remaining)', originalAmount: round(amount) });
     } else {
       balance += interest;
       (status === 'missed' ? missed : pending).push({ ...ev, amount: round(amount), label: 'EMI' });
@@ -239,10 +241,11 @@ function simulateGold(g, today) {
   let paidCount = 0;
   events.forEach((ev) => {
     const status = statusOf(g, ev);
-    if (status === 'paid') paidCount += 1;
+    const amountPaid = status === 'paid' ? monthlyInterest : Math.min(monthlyInterest, Number(g.paymentAmounts?.[ev.key]) || 0);
+    if (amountPaid >= monthlyInterest - 0.01) paidCount += 1;
     else {
-      unpaid += monthlyInterest;
-      (status === 'missed' ? missed : pending).push({ ...ev, amount: round(monthlyInterest), label: 'Interest' });
+      unpaid += monthlyInterest - amountPaid;
+      (status === 'missed' ? missed : pending).push({ ...ev, amount: round(monthlyInterest - amountPaid), label: 'Interest' });
     }
   });
   const nextInterest = addMonthsDate(firstInterest, events.length);
@@ -305,13 +308,15 @@ function simulatePayLater(p, today) {
   let paidCount = 0;
   events.forEach((ev) => {
     const status = statusOf(p, ev);
-    if (status === 'paid') paidCount += 1;
-    else (status === 'missed' ? missed : pending).push({ ...ev, amount: round(amount), label: 'Instalment' });
+    const paid = status === 'paid' ? amount : Math.min(amount, Number(p.paymentAmounts?.[ev.key]) || 0);
+    if (paid >= amount - 0.01) paidCount += 1;
+    else (status === 'missed' ? missed : pending).push({ ...ev, amount: round(amount - paid), label: 'Instalment' });
   });
+  const paidTotal = events.reduce((sum, ev) => sum + (statusOf(p, ev) === 'paid' ? amount : Math.min(amount, Number(p.paymentAmounts?.[ev.key]) || 0)), 0);
   const left = total - paidCount;
   const nextDate = events.length < total ? addMonthsDate(p.firstDate, events.length) : null;
   return {
-    owed: round(left * amount),
+    owed: round(Math.max(0, total * amount - paidTotal)),
     asset: 0,
     monthlyOutgo: left > 0 ? round(amount) : 0,
     emi: round(amount),
@@ -382,15 +387,16 @@ function simulateChit(c, today) {
   let paidCount = 0;
   events.forEach((ev) => {
     const status = statusOf(c, ev);
-    if (status === 'paid') paidCount += 1;
-    else (status === 'missed' ? missed : pending).push({ ...ev, amount: round(amount), label: 'Chit instalment' });
+    const paid = status === 'paid' ? amount : Math.min(amount, Number(c.paymentAmounts?.[ev.key]) || 0);
+    if (paid >= amount - 0.01) paidCount += 1;
+    else (status === 'missed' ? missed : pending).push({ ...ev, amount: round(amount - paid), label: 'Chit instalment' });
   });
   const taken = !!c.taken && !!c.takenDate && c.takenDate <= today;
   const left = months - paidCount;
-  const paidIn = paidCount * amount;
+  const paidIn = events.reduce((sum, ev) => sum + (statusOf(c, ev) === 'paid' ? amount : Math.min(amount, Number(c.paymentAmounts?.[ev.key]) || 0)), 0);
   const nextDate = events.length < months ? addMonthsDate(c.firstDate, events.length) : null;
   return {
-    owed: taken ? round(left * amount) : 0,
+    owed: taken ? round(Math.max(0, months * amount - paidIn)) : 0,
     asset: taken ? 0 : round(paidIn),
     paidIn: round(paidIn),
     monthlyOutgo: left > 0 ? round(amount) : 0,

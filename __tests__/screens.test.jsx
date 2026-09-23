@@ -95,7 +95,7 @@ describe('MoneyLoom', () => {
   });
 
   test('monthly repeats post due months once', () => {
-    const rule = { id: 'r1', tab: 'expense', template: templateFrom('expense', { id: 'x', date: '2026-01-05', kind: 'expense', category: 'Rent & housing', amount: 12000, mode: 'UPI', note: 'Rent' }), day: 31, startMonth: '2026-01', lastPostedMonth: '2026-01', active: true };
+    const rule = { id: 'r1', tab: 'expense', template: templateFrom('expense', { id: 'x', date: '2026-01-05', kind: 'expense', category: 'Rent & housing', amount: 12000, mode: 'UPI', note: 'Rent' }), day: 31, startMonth: '2026-01', lastPostedMonth: '2026-01', active: true, confirmationMode: 'auto' };
     const base = { entries: [], investments: [], values: {}, budgets: {}, recurring: [rule] };
     const a = applyRecurring(base, '2026-04-29');
     expect(a.posted).toBe(2); // Feb (28th) and Mar (31st); April's day 30 not reached yet

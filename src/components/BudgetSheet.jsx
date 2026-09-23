@@ -220,7 +220,7 @@ export default function BudgetSheet({ budgets, budgetPeriod = 'monthly', spentBy
                 key={c}
                 category={c}
                 value={values[c] ?? ''}
-                spent={fixed[c] ? data.entries.reduce((sum, e) => sum + (e.kind === 'expense' && e.category === c && e.date?.slice(0, 7) === new Date().toISOString().slice(0, 7) ? Number(e.amount) || 0 : 0), 0) : spentByCategory[c] || 0}
+                spent={fixed[c] ? data.entries.reduce((sum, e) => sum + (!e.planned && e.kind === 'expense' && e.category === c && e.date?.slice(0, 7) === new Date().toISOString().slice(0, 7) ? Number(e.amount) || 0 : 0), 0) : spentByCategory[c] || 0}
                 periodWord={fixed[c] ? 'month' : periodWord}
                 onChange={onChange}
                 onRemove={removeRow}

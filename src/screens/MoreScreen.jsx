@@ -18,7 +18,7 @@ import {
 import AmountDialog from '../components/AmountDialog';
 import TextPromptDialog from '../components/TextPromptDialog';
 import VersionPicker from '../components/VersionPicker';
-import { Card, GhostButton, IconButton, PrimaryButton, SectionHeader, Tag } from '../components/ui';
+import { Card, GhostButton, IconButton, PrimaryButton, ScreenHeading, SectionHeader, Tag } from '../components/ui';
 
 const TAB_LABEL = { expense: 'Expense', income: 'Income', investment: 'Investment' };
 const switchColors = (on) => ({ trackColor: { false: C.line, true: '#8BBDB9' }, thumbColor: on ? C.invest : '#F4F4F4' });
@@ -413,7 +413,7 @@ export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bo
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomSpace, gap: 14 }}>
-      <Text style={[T.h1, { fontSize: 28 }]}>More</Text>
+      <ScreenHeading title="More" subtitle="Your settings, privacy and app preferences" eyebrow="PERSONALISE MONEYLOOM" />
 
       {auth.user ? (
         <Card>
@@ -587,7 +587,7 @@ export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bo
         <View style={{ paddingHorizontal: 16 }}>
           <SectionHeader
             title="Monthly repeats"
-            subtitle="Added automatically each month. Turn on Repeat every month when you add rent, EMI, salary or a SIP."
+            subtitle="Confirm payments and receipts as they happen. Existing automatic repeats can be changed to Ask me."
           />
         </View>
         {repeats.length === 0 ? (
@@ -602,9 +602,10 @@ export default function MoreScreen({ onToast, onStatus, onOpenBudgets, cloud, bo
                 <Text style={[T.body, { fontWeight: '600' }]} numberOfLines={1}>{repeatName(r)}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
                   <Tag label={TAB_LABEL[r.tab]} />
-                  <Text style={T.small}>{`${fmt(r.template.amount)} on day ${r.day}${r.active ? '' : ', paused'}`}</Text>
+                  <Text style={T.small}>{`${fmt(r.template.amount)} on day ${r.day} · ${r.confirmationMode === 'auto' ? 'Auto' : 'Ask me'}${r.active ? '' : ', paused'}`}</Text>
                 </View>
               </View>
+              <Pressable onPress={() => updateRecurring(r.id, { confirmationMode: r.confirmationMode === 'auto' ? 'ask' : 'auto' })} style={{ paddingHorizontal: 5, paddingVertical: 8 }} accessibilityRole="button" accessibilityLabel={`Change confirmation mode for ${repeatName(r)}`}><Text style={[T.small, { color: C.invest, fontWeight: '700' }]}>{r.confirmationMode === 'auto' ? 'Ask me' : 'Auto'}</Text></Pressable>
               <IconButton onPress={() => setEditingRepeat(r)} label={`Change amount for ${repeatName(r)}`} size={36}>
                 <Pencil size={16} color={C.muted} />
               </IconButton>
@@ -734,5 +735,5 @@ const s = StyleSheet.create({
   inline: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
   repeat: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 16, paddingRight: 10, paddingVertical: 8 },
-  item: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line },
+  item: { paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.lineSoft },
 });

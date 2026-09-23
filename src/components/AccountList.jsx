@@ -46,7 +46,7 @@ export default function AccountList({ onToast, bottomSpace }) {
 
   return (
     <>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomSpace, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomSpace, gap: 14 }}>
         <KpiGrid
           items={[
             { label: 'In accounts', value: fmt(total), color: C.invest },
